@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Gallery — JEB Photo Vault{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Photo Gallery</h1>
+    <p class="page-subtitle">
+      {% if user.is_authenticated %}Your albums and shared collections{% else %}Public photo albums{% endif %}
+    </p>
+  </div>
+  {% if user.is_authenticated %}
+  <a href="{% url 'album-create' %}" class="btn btn-primary">+ New Album</a>
+  {% endif %}
+</div>
+
+{% if albums %}
+  <div class="album-grid">
+    {% for album in albums %}
+    <a href="{{ album.get_absolute_url }}" class="album-card">
+      <div class="album-cover">
+        {% if album.cover_photo %}
+          <img src="{{ album.cover_photo.thumbnail_url }}" alt="{{ album.title }}" loading="lazy">
+        {% else %}
+          <div class="album-cover-placeholder">🖼</div>
+        {% endif %}
+      </div>
+      <div class="album-info">
+        <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.25rem;">
+          <span class="album-title">{{ album.title }}</span>
+          {% if album.is_public %}
+            <span class="badge badge-green" style="font-size:0.65rem;">Public</span>
+          {% endif %}
+        </div>
+        {% if album.description %}
+          <p style="font-size:0.825rem; color:var(--muted); margin-bottom:0.5rem;">{{ album.description|truncatechars:60 }}</p>
+        {% endif %}
+        <div class="album-meta">
+          <span>📷 {{ album.photo_count }} photo{{ album.photo_count|pluralize }}</span>
+          <span>by {{ album.owner.username }}</span>
+        </div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+
+  {% if is_paginated %}
+  <div style="display:flex; gap:0.5rem; justify-content:center; margin-top:2rem;">
+    {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}" class="btn btn-ghost btn-sm">← Prev</a>
+    {% endif %}
+    <span style="padding:0.35rem 0.85rem; color:var(--muted); font-size:0.8rem;">
+      Page {{ page_obj.number }} of {{ page_obj.num_pages }}
+    </span>
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}" class="btn btn-ghost btn-sm">Next →</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+{% else %}
+  <div class="empty-state">
+    <div class="empty-state-icon">📷</div>
+    <h3>No albums yet</h3>
+    <p style="margin-bottom:1.5rem;">
+      {% if user.is_authenticated %}Create your first album to get started.{% else %}Sign in to create albums or check back later.{% endif %}
+    </p>
+    {% if user.is_authenticated %}
+      <a href="{% url 'album-create' %}" class="btn btn-primary">Create Album</a>
+    {% else %}
+      <a href="{% url 'login' %}" class="btn btn-primary">Sign In</a>
+    {% endif %}
+  </div>
+{% endif %}
+{% endblock %}

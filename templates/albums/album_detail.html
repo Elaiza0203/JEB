@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}{{ album.title }} — JEB Photo Vault{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.5rem;">
+      <h1 class="page-title">{{ album.title }}</h1>
+      {% if album.is_public %}
+        <span class="badge badge-green">Public</span>
+      {% else %}
+        <span class="badge badge-muted">Private</span>
+      {% endif %}
+      {% if user_role %}
+        <span class="badge badge-purple">{{ user_role|title }}</span>
+      {% endif %}
+    </div>
+    {% if album.description %}
+      <p class="page-subtitle">{{ album.description }}</p>
+    {% endif %}
+    <p class="page-subtitle" style="margin-top:0.25rem;">
+      by {{ album.owner.username }} · {{ photos.count }} photo{{ photos.count|pluralize }}
+    </p>
+  </div>
+  <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+    <a href="{% url 'album-list' %}" class="btn btn-ghost btn-sm">← Gallery</a>
+    {% if can_edit %}
+      <a href="{% url 'photo-upload' album.pk %}" class="btn btn-primary btn-sm">+ Upload Photo</a>
+    {% endif %}
+    {% if is_owner %}
+      <a href="{% url 'album-update' album.pk %}" class="btn btn-ghost btn-sm">Edit Album</a>
+      <a href="{% url 'album-delete' album.pk %}" class="btn btn-danger btn-sm">Delete</a>
+    {% endif %}
+  </div>
+</div>
+
+{% if photos %}
+<div class="photo-grid">
+  {% for photo in photos %}
+  <div class="photo-card">
+    <a href="{% url 'photo-detail' album.pk photo.pk %}">
+      <img src="{{ photo.thumbnail_url }}" alt="{{ photo.title|default:'Photo' }}" loading="lazy">
+      <div class="photo-card-overlay">
+        <span class="photo-card-title">{{ photo.title|default:"Untitled" }}</span>
+      </div>
+    </a>
+    {% if can_edit %}
+    <div style="position:absolute; top:0.5rem; right:0.5rem; display:flex; gap:0.35rem; opacity:0; transition:opacity 0.2s;" class="photo-actions">
+      {% if is_owner %}
+      <form method="post" action="{% url 'photo-set-cover' album.pk photo.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm" style="background:rgba(0,0,0,0.7); color:#fff; border:none; padding:0.25rem 0.5rem;" title="Set as cover">⭐</button>
+      </form>
+      {% endif %}
+      <a href="{% url 'photo-update' album.pk photo.pk %}" class="btn btn-sm" style="background:rgba(0,0,0,0.7); color:#fff; border:none; padding:0.25rem 0.5rem;">✏️</a>
+      <a href="{% url 'photo-delete' album.pk photo.pk %}" class="btn btn-sm" style="background:rgba(224,108,117,0.8); color:#fff; border:none; padding:0.25rem 0.5rem;">🗑</a>
+    </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+<style>
+  .photo-card:hover .photo-actions { opacity: 1 !important; }
+</style>
+{% else %}
+<div class="empty-state">
+  <div class="empty-state-icon">🖼</div>
+  <h3>No photos yet</h3>
+  {% if can_edit %}
+  <p style="margin-bottom:1.5rem;">Upload your first photo to this album.</p>
+  <a href="{% url 'photo-upload' album.pk %}" class="btn btn-primary">Upload Photo</a>
+  {% else %}
+  <p>This album is empty.</p>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if is_owner %}
+<hr class="divider">
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:2rem;">
+  <!-- Members -->
+  <div>
+    <div class="section-label">Album Members</div>
+    <div class="members-list" style="margin-bottom:1.25rem;">
+      {% for role in roles %}
+      <div class="member-row">
+        <div>
+          <div class="member-name">{{ role.user.username }}</div>
+          <div class="member-sub">
+            {% if role.user == album.owner %}Owner{% else %}{{ role.role|title }}{% endif %}
+          </div>
+        </div>
+        {% if role.user != album.owner %}
+        <form method="post" action="{% url 'album-member-remove' album.pk role.user.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Remove {{ role.user.username }}?')">Remove</button>
+        </form>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Add member form -->
+    <div class="section-label" style="margin-top:1.5rem;">Invite Member</div>
+    <form method="post" action="{% url 'album-member-add' album.pk %}">
+      {% csrf_token %}
+      <div class="inline-form">
+        <div class="form-group">
+          <input type="text" name="username" class="form-input" placeholder="Username" required>
+        </div>
+        <div class="form-group">
+          <select name="role" class="form-select">
+            <option value="viewer">Viewer</option>
+            <option value="contributor">Contributor</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Invite</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Cover photo info -->
+  <div>
+    <div class="section-label">Cover Photo</div>
+    {% if album.cover_photo %}
+    <div style="border-radius:var(--radius); overflow:hidden; aspect-ratio:16/9;">
+      <img src="{{ album.cover_photo.thumbnail_url }}" alt="Cover" style="width:100%; height:100%; object-fit:cover;">
+    </div>
+    <p style="font-size:0.8rem; color:var(--muted); margin-top:0.5rem;">
+      Hover a photo and click ⭐ to change the cover.
+    </p>
+    {% else %}
+    <p style="color:var(--muted); font-size:0.875rem;">No cover photo set. Upload a photo to set one.</p>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

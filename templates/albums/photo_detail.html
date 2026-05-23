@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}{{ photo.title|default:"Photo" }} — JEB Photo Vault{% endblock %}
+
+{% block content %}
+<div style="display:flex; gap:0.75rem; margin-bottom:1.5rem; align-items:center;">
+  <a href="{{ album.get_absolute_url }}" class="btn btn-ghost btn-sm">← {{ album.title }}</a>
+  {% if prev_photo %}
+    <a href="{% url 'photo-detail' album.pk prev_photo.pk %}" class="btn btn-ghost btn-sm">‹ Prev</a>
+  {% endif %}
+  {% if next_photo %}
+    <a href="{% url 'photo-detail' album.pk next_photo.pk %}" class="btn btn-ghost btn-sm">Next ›</a>
+  {% endif %}
+  {% if can_edit %}
+    <div style="margin-left:auto; display:flex; gap:0.5rem;">
+      <a href="{% url 'photo-update' album.pk photo.pk %}" class="btn btn-ghost btn-sm">Edit</a>
+      <a href="{% url 'photo-delete' album.pk photo.pk %}" class="btn btn-danger btn-sm">Delete</a>
+    </div>
+  {% endif %}
+</div>
+
+<div style="display:grid; grid-template-columns:1fr 280px; gap:2rem; align-items:start;">
+  <div>
+    <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden;">
+      <img src="{{ photo.image_url }}" alt="{{ photo.title|default:'Photo' }}" style="width:100%; display:block; max-height:80vh; object-fit:contain;">
+    </div>
+  </div>
+
+  <div>
+    <div class="card" style="padding:1.5rem;">
+      <h2 style="font-family:var(--font-display); font-size:1.25rem; margin-bottom:0.75rem;">
+        {{ photo.title|default:"Untitled Photo" }}
+      </h2>
+      {% if photo.description %}
+        <p style="color:var(--muted); font-size:0.875rem; margin-bottom:1rem;">{{ photo.description }}</p>
+      {% endif %}
+      <hr class="divider" style="margin:1rem 0;">
+      <div style="display:flex; flex-direction:column; gap:0.5rem;">
+        {% if photo.uploaded_by %}
+        <div style="display:flex; justify-content:space-between; font-size:0.825rem;">
+          <span style="color:var(--muted);">Uploaded by</span>
+          <span>{{ photo.uploaded_by.username }}</span>
+        </div>
+        {% endif %}
+        <div style="display:flex; justify-content:space-between; font-size:0.825rem;">
+          <span style="color:var(--muted);">Added</span>
+          <span>{{ photo.created_at|date:"N j, Y" }}</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:0.825rem;">
+          <span style="color:var(--muted);">Album</span>
+          <a href="{{ album.get_absolute_url }}" style="color:var(--accent); text-decoration:none;">{{ album.title }}</a>
+        </div>
+      </div>
+
+      {% if can_edit %}
+      <hr class="divider" style="margin:1rem 0;">
+      {% if is_owner %}
+      <form method="post" action="{% url 'photo-set-cover' album.pk photo.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-ghost btn-sm" style="width:100%;">⭐ Set as Album Cover</button>
+      </form>
+      {% endif %}
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
